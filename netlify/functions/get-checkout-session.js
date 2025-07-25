@@ -1,8 +1,7 @@
-import Stripe from 'stripe';
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-export async function handler(event) {
+exports.handler = async function(event, context) {
   if (event.httpMethod !== 'GET') {
     return {
       statusCode: 405,
@@ -10,7 +9,13 @@ export async function handler(event) {
     };
   }
 
-  const sessionId = event.queryStringParameters.sessionId;
+  const sessionId = event.queryStringParameters && event.queryStringParameters.sessionId;
+  if (!sessionId) {
+    return {
+      statusCode: 400,
+      body: 'Missing sessionId',
+    };
+  }
 
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
@@ -21,10 +26,11 @@ export async function handler(event) {
       statusCode: 200,
       body: JSON.stringify(session),
     };
-  } catch (error) {
+  } catch (err) {
+    console.error('Stripe checkout.sessions.retrieve error:', err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Failed to retrieve session' }),
+      body: JSON.stringify({ error: err.message }),
     };
   }
-}
+};

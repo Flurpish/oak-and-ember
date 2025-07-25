@@ -1,8 +1,8 @@
-import Stripe from 'stripe';
+// CommonJS style for Netlify Functions
+const Stripe = require('stripe');
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-export async function handler(event) {
+exports.handler = async function(event, context) {
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -10,9 +10,18 @@ export async function handler(event) {
     };
   }
 
+  let cartItems;
   try {
-    const { cartItems } = JSON.parse(event.body);
+    ({ cartItems } = JSON.parse(event.body));
+  } catch (parseErr) {
+    console.error('Error parsing request body:', parseErr);
+    return {
+      statusCode: 400,
+      body: 'Invalid JSON',
+    };
+  }
 
+  try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
@@ -33,9 +42,10 @@ export async function handler(event) {
       body: JSON.stringify({ url: session.url }),
     };
   } catch (err) {
+    console.error('Stripe checkout.sessions.create error:', err);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: err.message }),
     };
   }
-}
+};
