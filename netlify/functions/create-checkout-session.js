@@ -33,6 +33,22 @@ exports.handler = async function(event, context) {
         },
         quantity: item.quantity,
       })),
+
+      // 1) Collect shipping address (you can switch to billing_address_collection)
+      shipping_address_collection: {
+        allowed_countries: ['US', 'CA'], // adjust as needed
+      },
+
+      // 2) Add a custom “Special notes” text field
+      custom_fields: [
+        {
+          key: 'special_notes',
+          label: { type: 'custom', custom: 'Special notes' },
+          type: 'text',
+          required: false,
+        },
+      ],
+
       success_url: 'https://oak-and-embers.netlify.app/success?session_id={CHECKOUT_SESSION_ID}',
       cancel_url: 'https://oak-and-embers.netlify.app/cancel',
     });
